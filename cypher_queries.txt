@@ -1,0 +1,177 @@
+# GitHub User Network Analyzer - Cypher Queries
+
+## Basic Queries
+
+### 1. Find all users
+```cypher
+MATCH (u:User) 
+RETURN u.login, u.name, u.public_repos
+ORDER BY u.public_repos DESC
+```
+
+### 2. Find all repositories for a specific user
+```cypher
+MATCH (u:User {login: "octocat"})-[:OWNS]->(r:Repo)
+RETURN r.name, r.description, r.stars, r.forks
+ORDER BY r.stars DESC
+```
+
+### 3. Find programming languages used by a user
+```cypher
+MATCH (u:User {login: "octocat"})-[:OWNS]->(r:Repo)-[rel:USES_LANGUAGE]->(l:Language)
+RETURN l.name, count(r) as repo_count, sum(rel.bytes) as total_bytes
+ORDER BY repo_count DESC
+```
+
+## Advanced Analysis Queries
+
+### 4. Most popular programming languages (across all users)
+```cypher
+MATCH (l:Language)<-[rel:USES_LANGUAGE]-(r:Repo)
+WITH l.name as language, count(r) as repo_count, sum(rel.bytes) as total_bytes
+RETURN language, repo_count, total_bytes
+ORDER BY repo_count DESC
+LIMIT 20
+```
+
+### 5. Users with the most starred repositories
+```cypher
+MATCH (u:User)-[:OWNS]->(r:Repo)
+WITH u, sum(r.stars) as total_stars, count(r) as repo_count
+RETURN u.login, u.name, total_stars, repo_count
+ORDER BY total_stars DESC
+LIMIT 10
+```
+
+### 6. Find repositories that are not forks and have high star counts
+```cypher
+MATCH (r:Repo)
+WHERE NOT r.is_fork AND r.stars > 100
+RETURN r.name, r.full_name, r.stars, r.language
+ORDER BY r.stars DESC
+```
+
+### 7. Language diversity analysis - users who use many different languages
+```cypher
+MATCH (u:User)-[:OWNS]->(r:Repo)-[:USES_LANGUAGE]->(l:Language)
+WITH u, count(DISTINCT l) as language_count, collect(DISTINCT l.name) as languages
+WHERE language_count > 5
+RETURN u.login, u.name, language_count, languages
+ORDER BY language_count DESC
+```
+
+### 8. Find repositories with similar language profiles
+```cypher
+MATCH (r1:Repo)-[:USES_LANGUAGE]->(l:Language)<-[:USES_LANGUAGE]-(r2:Repo)
+WHERE r1.full_name < r2.full_name
+WITH r1, r2, count(l) as shared_languages
+WHERE shared_languages > 3
+RETURN r1.name, r2.name, shared_languages
+ORDER BY shared_languages DESC
+```
+
+## Network Analysis Queries
+
+### 9. Calculate repository similarity based on shared languages
+```cypher
+MATCH (r1:Repo)-[:USES_LANGUAGE]->(l:Language)<-[:USES_LANGUAGE]-(r2:Repo)
+WHERE r1 <> r2
+WITH r1, r2, count(l) as shared_languages,
+     [(r1)-[:USES_LANGUAGE]->(lang) | lang.name] as r1_langs,
+     [(r2)-[:USES_LANGUAGE]->(lang) | lang.name] as r2_langs
+WITH r1, r2, shared_languages,
+     size(r1_langs) as r1_lang_count,
+     size(r2_langs) as r2_lang_count
+WITH r1, r2, shared_languages,
+     shared_languages * 1.0 / (r1_lang_count + r2_lang_count - shared_languages) as jaccard_similarity
+WHERE jaccard_similarity > 0.5
+RETURN r1.name, r2.name, jaccard_similarity
+ORDER BY jaccard_similarity DESC
+```
+
+### 10. Find users who contribute to similar technology stacks
+```cypher
+MATCH (u1:User)-[:OWNS]->(r1:Repo)-[:USES_LANGUAGE]->(l:Language)<-[:USES_LANGUAGE]-(r2:Repo)<-[:OWNS]-(u2:User)
+WHERE u1 <> u2
+WITH u1, u2, count(DISTINCT l) as shared_languages
+WHERE shared_languages > 3
+RETURN u1.login, u2.login, shared_languages
+ORDER BY shared_languages DESC
+```
+
+## Statistics and Reporting Queries
+
+### 11. Repository statistics summary
+```cypher
+MATCH (r:Repo)
+RETURN 
+    count(r) as total_repositories,
+    sum(r.stars) as total_stars,
+    sum(r.forks) as total_forks,
+    avg(r.stars) as avg_stars,
+    max(r.stars) as max_stars,
+    count(CASE WHEN r.is_fork THEN 1 END) as fork_count,
+    count(CASE WHEN NOT r.is_fork THEN 1 END) as original_count
+```
+
+### 12. Language adoption trends
+```cypher
+MATCH (r:Repo)-[rel:USES_LANGUAGE]->(l:Language)
+WITH l.name as language, 
+     count(r) as repo_count,
+     sum(rel.bytes) as total_bytes,
+     avg(rel.percentage) as avg_percentage,
+     collect(r.created_at) as creation_dates
+RETURN language, repo_count, total_bytes, avg_percentage
+ORDER BY repo_count DESC
+```
+
+### 13. User activity analysis
+```cypher
+MATCH (u:User)-[:OWNS]->(r:Repo)
+WITH u, count(r) as repo_count, 
+     sum(r.stars) as total_stars,
+     sum(r.forks) as total_forks,
+     max(r.updated_at) as last_activity
+RETURN u.login, u.name, repo_count, total_stars, total_forks, last_activity
+ORDER BY total_stars DESC
+```
+
+## Data Quality and Maintenance Queries
+
+### 14. Find repositories without language data
+```cypher
+MATCH (r:Repo)
+WHERE NOT (r)-[:USES_LANGUAGE]->()
+RETURN r.name, r.full_name, r.language
+```
+
+### 15. Find orphaned language nodes
+```cypher
+MATCH (l:Language)
+WHERE NOT ()-[:USES_LANGUAGE]->(l)
+RETURN l.name
+```
+
+### 16. Clean up test data (use with caution!)
+```cypher
+// Remove all data for a specific user
+MATCH (u:User {login: "test-user"})-[:OWNS]->(r:Repo)
+OPTIONAL MATCH (r)-[rel:USES_LANGUAGE]->(l:Language)
+DETACH DELETE u, r, rel
+```
+
+## Performance Optimization Queries
+
+### 17. Create additional indexes for better performance
+```cypher
+CREATE INDEX repo_stars IF NOT EXISTS FOR (r:Repo) ON (r.stars);
+CREATE INDEX repo_language IF NOT EXISTS FOR (r:Repo) ON (r.language);
+CREATE INDEX user_public_repos IF NOT EXISTS FOR (u:User) ON (u.public_repos);
+```
+
+### 18. Database statistics
+```cypher
+CALL db.stats.retrieve('GRAPH COUNTS') YIELD data
+RETURN data
+```

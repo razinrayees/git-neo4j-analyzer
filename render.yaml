@@ -1,0 +1,40 @@
+services:
+  # Backend API Service
+  - type: web
+    name: github-analyzer-api
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: |
+      python -m pip install --upgrade pip==23.3.2
+      pip install --no-cache-dir -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT backend.app:app --timeout 120 --workers 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: NEO4J_URI
+        sync: false
+      - key: NEO4J_USERNAME
+        sync: false
+      - key: NEO4J_PASSWORD
+        sync: false
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_DEBUG
+        value: False
+
+  # Frontend Static Site
+  - type: static
+    name: github-analyzer-frontend
+    buildCommand: |
+      npm install
+      npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: github-analyzer-api
+          property: host

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub User Network Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .loading-spinner {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2 bg-blue-600 rounded-lg">
+                        <i data-lucide="github" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold text-slate-900">GitHub Network Analyzer</h1>
+                </div>
+                <div class="flex items-center space-x-2 text-sm text-slate-600">
+                    <i data-lucide="database" class="w-4 h-4"></i>
+                    <span>Powered by Neo4j</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Search Section -->
+        <div class="text-center mb-12">
+            <h2 class="text-4xl font-bold text-slate-900 mb-4">
+                Analyze GitHub User Networks
+            </h2>
+            <p class="text-xl text-slate-600 mb-8 max-w-2xl mx-auto">
+                Enter a GitHub username to explore their repositories, programming languages, and project statistics stored in a Neo4j graph database
+            </p>
+            
+            <div class="max-w-md mx-auto">
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5"></i>
+                    <input
+                        type="text"
+                        id="usernameInput"
+                        placeholder="Enter GitHub username..."
+                        class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-lg"
+                    />
+                </div>
+                <button
+                    id="analyzeBtn"
+                    class="w-full mt-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-[1.02] disabled:scale-100 text-lg"
+                >
+                    <span id="btnText">Analyze Network</span>
+                    <i data-lucide="loader-2" id="btnLoader" class="w-5 h-5 ml-2 loading-spinner hidden"></i>
+                </button>
+            </div>
+
+            <!-- Error Display -->
+            <div id="errorMessage" class="hidden mt-4 p-4 bg-red-100 border border-red-300 text-red-700 rounded-lg max-w-md mx-auto"></div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="hidden fade-in">
+            <!-- User Profile Card -->
+            <div id="userProfile" class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <!-- Profile content will be inserted here -->
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-xl shadow-lg p-6 text-center">
+                    <div class="text-3xl font-bold text-blue-600" id="totalRepos">0</div>
+                    <div class="text-slate-600">Total Repositories</div>
+                </div>
+                <div class="bg-white rounded-xl shadow-lg p-6 text-center">
+                    <div class="text-3xl font-bold text-teal-600" id="topLanguage">-</div>
+                    <div class="text-slate-600">Top Language</div>
+                </div>
+                <div class="bg-white rounded-xl shadow-lg p-6 text-center">
+                    <div class="text-3xl font-bold text-orange-600" id="totalStars">0</div>
+                    <div class="text-slate-600">Total Stars</div>
+                </div>
+                <div class="bg-white rounded-xl shadow-lg p-6 text-center">
+                    <div class="text-3xl font-bold text-purple-600" id="totalForks">0</div>
+                    <div class="text-slate-600">Total Forks</div>
+                </div>
+            </div>
+
+            <!-- Charts and Repository List -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Language Chart -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-xl font-bold text-slate-900 mb-4">Programming Languages</h3>
+                    <canvas id="languageChart" width="400" height="300"></canvas>
+                </div>
+
+                <!-- Top Repositories -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-xl font-bold text-slate-900 mb-4">Top Repositories</h3>
+                    <div id="repositoryList" class="space-y-4">
+                        <!-- Repository items will be inserted here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Graph Visualization Placeholder -->
+            <div class="mt-8 bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-xl font-bold text-slate-900 mb-4">Network Graph</h3>
+                <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-8 text-center">
+                    <i data-lucide="network" class="w-16 h-16 text-blue-400 mx-auto mb-4"></i>
+                    <p class="text-slate-600">Graph visualization would appear here</p>
+                    <p class="text-sm text-slate-500 mt-2">Connected to Neo4j database for network analysis</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>
