@@ -2,8 +2,6 @@
 
 A full-stack application that analyzes GitHub user networks using Python, Neo4j graph database, and a modern web frontend. This tool fetches GitHub user repositories, extracts programming language data, and stores everything in a Neo4j graph database for powerful network analysis.
 
-![GitHub Network Analyzer](static/sample_graph.png)
-
 ## 🌟 Features
 
 - **GitHub API Integration**: Fetch user profiles and repository data
@@ -48,8 +46,8 @@ A full-stack application that analyzes GitHub user networks using Python, Neo4j 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/github-neo4j-analyzer.git
-cd github-neo4j-analyzer
+git clone https://github.com/razinrayees/git-neo4j-analyzer.git
+cd git-neo4j-analyzer
 ```
 
 ### 2. Set Up Environment
@@ -178,7 +176,7 @@ See `cypher_queries.txt` for more advanced queries.
 ## 📁 Project Structure
 
 ```
-github-neo4j-analyzer/
+git-neo4j-analyzer/
 ├── backend/
 │   ├── app.py              # Flask application
 │   ├── fetch_github.py     # GitHub API client
@@ -234,21 +232,11 @@ gunicorn --bind 0.0.0.0:5000 app:app
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ## 🙏 Acknowledgments
 
 - **Neo4j** for the powerful graph database
 - **GitHub API** for providing comprehensive repository data
 - **Chart.js** for beautiful data visualizations
 - **Tailwind CSS** for modern styling
-
-## 📞 Support
-
-For questions or support, please open an issue on GitHub or contact [your-email@example.com](mailto:your-email@example.com).
-
----
 
 **Made with ❤️ using Python, Neo4j, and modern web technologies**
